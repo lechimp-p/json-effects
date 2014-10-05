@@ -194,6 +194,13 @@ runJSONIn obj eff = go obj (admin eff)
            MaybeValue t next        -> go obj (next $ HM.lookup t obj)
            ThrowJSONError err _     -> return $ Left err
 
+runJSONIn' :: ByteString -> Eff (JSONIn :> r) a -> Eff r (Either JSONError a)
+runJSONIn' bs eff =
+    let dec = decode bs
+    in case dec of
+        Just obj -> runJSONIn obj eff
+        Nothing -> return . Left $ CantDecodeObject bs 
+
 runJSONOut :: Eff (JSONOut :> r) a -> Eff r (Value, a)
 runJSONOut eff = go [] (admin eff)
     where
@@ -203,3 +210,6 @@ runJSONOut eff = go [] (admin eff)
 
 runJSONIO :: Object -> Eff (JSONOut :> JSONIn :> r) a -> Eff r (Either JSONError (Value, a))
 runJSONIO obj = runJSONIn obj . runJSONOut
+
+runJSONIO' :: ByteString -> Eff (JSONOut :> JSONIn :> r) a -> Eff r (Either JSONError (Value, a))
+runJSONIO' bs = runJSONIn' bs . runJSONOut
