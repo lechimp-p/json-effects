@@ -200,3 +200,6 @@ runJSONOut eff = go [] (admin eff)
     go j (Val a) = return (object j, a)
     go j (E req) = handleRelay req (go j) $
         \ (WriteProp p v next) -> go ((p, toJSON v):j) (next v)
+
+runJSONIO :: Object -> Eff (JSONOut :> JSONIn :> r) a -> Eff r (Either JSONError (Value, a))
+runJSONIO obj = runJSONIn obj . runJSONOut
