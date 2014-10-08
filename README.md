@@ -1,4 +1,4 @@
-json-transformer
+json-effects
 ================
 
-A haskell monad transformer for reading and writing JSON-objects.
+Effects for haskells extensible effects for reading and writing JSON-objects.
