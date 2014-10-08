@@ -138,7 +138,7 @@ infixl 0 ?>
 
 -- | Use the value of a property as input for the monad.
 (.$>) :: Member JSONIn r
-      => Text -> Eff r a -> Eff r (Either JSONError a)
+      => Text -> Eff r a -> Eff r a
 p .$> m = do
     obj <- prop p
     useObject obj m 
@@ -147,7 +147,7 @@ infixl 0 .$>
 
 -- | Use the value of a property as input for the monad if it is there.
 (.?>) :: Member JSONIn r
-      => Text -> Eff r a -> Eff r (Maybe (Either JSONError a))
+      => Text -> Eff r a -> Eff r (Maybe a)
 p .?> m = do
     obj' <- maybeProp p
     case obj' of
@@ -157,6 +157,15 @@ p .?> m = do
             return . Just $ res
 
 infixl 0 .?>
+
+(.??>) :: (Member JSONIn r, Show err)
+       => Text -> Eff r (Either err a) -> Eff r (Maybe a)
+p .??> m = do
+    res <- p .?> m
+    case res of
+        Nothing         -> return Nothing
+        Just (Left err) -> throwJSONError . CantDecodeProperty p . show $ err
+        Just (Right r)  -> return . Just $ r
 
 -- | Helper for composition, has higher fixity than read
 --   and write operators.
@@ -176,14 +185,14 @@ extract eff = go [] (admin eff)
         \ (WriteProp p v next) -> go ((p, toJSON v):j) (next v)
 
 useObject :: Member JSONIn r
-          => Object -> Eff r a -> Eff r (Either JSONError a)
+          => Object -> Eff r a -> Eff r a
 useObject obj eff = go obj (admin eff)
     where
-    go obj (Val a) = return . Right $ a
+    go obj (Val a) = return a
     go obj (E req) = interpose req (go obj) $
         \ req -> case req of
            MaybeValue t next        -> go obj (next $ HM.lookup t obj)
-           ThrowJSONError err _     -> return $ Left err
+           ThrowJSONError err _     -> throwJSONError err
 
 runJSONIn :: Object -> Eff (JSONIn :> r) a -> Eff r (Either JSONError a) 
 runJSONIn obj eff = go obj (admin eff)
