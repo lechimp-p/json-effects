@@ -61,6 +61,10 @@ writeProp p v = send $ \ next -> inj (WriteProp p v next)
 -- Operators
 ------------
 
+-- TODO: I need to think ahout the operators. '?' should
+-- mean something with maybe, '$' should mean something with
+-- effects, but i does not seem to be consistent atm.
+
 -- | Write an ordinary value to the JSON-output
 (<:) :: (ToJSON a, Member JSONOut r)
      => Text -> a -> Eff r a
